@@ -1,3 +1,48 @@
+import math
+import random
+import sys
+
+import libnum
+import sympy
+
+
+def rsa_encryption(string_to_be_encrypted):
+    # message = input("Enter the message to be encrypted: ")
+    message = "hello"
+    message = message.encode('utf-8')  # po tej operacji message jest zmienną bajtową  b'hello'
+    # message = int(message)
+
+    n = pow(2, 1024)
+    m = pow(2, 1030)
+    test1 = 0
+    test2 = 0
+    while test1 == test2:
+        x = random.randint(n, m)
+        y = random.randint(n, m)
+        test1 = sympy.nextprime(x)  # first prime number
+        test2 = sympy.nextprime(y)  # second prime number
+
+    n = test1 * test2
+    phi = (test1 - 1) * (test2 - 1)
+    e = 65537
+    d = libnum.invmod(e, phi)
+
+    int_message = int.from_bytes(message, "big")
+
+    c = pow(int_message, e, n)
+    res = pow(c, d, n)
+
+    decrypted_message = res.to_bytes(len(message), 'big')
+    print("Encrypted Message is: ", c)
+    print("Decypted Message is: ", decrypted_message)
+
+
+def n_bit_random(n):
+    # Returns a random number
+    # between 2**(n-1)+1 and 2**n-1'''
+    return random.randrange(2 ** (n - 1) + 1, 2 ** n - 1)
+
+
 def print_png_data(content):
     j = 0
     for i in range(len(content)):

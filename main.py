@@ -7,6 +7,8 @@ from PIL import Image
 from skimage.io import imread
 import cv2
 
+png.rsa_encryption("HELLO")
+
 IHDR_hex = '0x490x480x440x52'
 PLTE_hex = '0x500x4c0x540x45'
 IDAT_hex = '0x490x440x410x54'
@@ -128,28 +130,29 @@ with open('.\\PNG_images\\icon-po-anonimizacji.png', 'wb') as file2:  # creation
 
 file2.close()
 
-# png_operations.print_png_data(content)
 
-image2 = imread('.\\PNG_images\\ball.png')  # image to be transformed
-
-plt.figure()
-plt.imshow(image2, cmap='gray')  # displaying original image
-
-image2_fourier = np.fft.fftshift(np.fft.fft2(image2))
-out = np.log(abs(image2_fourier))
-
-# Phase of a transformed image
-imgFloat32 = np.float32(image2)  # Convert image to float32
-dft = cv2.dft(imgFloat32, flags=cv2.DFT_COMPLEX_OUTPUT)  # Fourier transform
-dftShift = np.fft.fftshift(dft)  # Move the low frequency component to the center of the frequency domain image
-dftAmp = cv2.magnitude(dft[:, :, 0], dft[:, :, 1])  # Amplitude spectrum, decentralized
-phase = np.arctan2(dftShift[:, :, 1], dftShift[:, :, 0])  # Calculated phase angle (radian system)
-dftPhi = phase / np.pi * 180  # Convert phase angle to [- 180, 180]
-
-plt.figure(figsize=(9, 6))
-plt.title("DFT Phase"), plt.axis('off')
-plt.imshow(dftPhi)
-
-plt.figure()
-plt.imshow(out, cmap='gray')  # displaying image after fourier transform
-plt.show()
+# # png_operations.print_png_data(content)
+#
+# image2 = imread('.\\PNG_images\\ball.png')  # image to be transformed
+#
+# plt.figure()
+# plt.imshow(image2, cmap='gray')  # displaying original image
+#
+# image2_fourier = np.fft.fftshift(np.fft.fft2(image2))
+# out = np.log(abs(image2_fourier))
+#
+# # Phase of a transformed image
+# imgFloat32 = np.float32(image2)  # Convert image to float32
+# dft = cv2.dft(imgFloat32, flags=cv2.DFT_COMPLEX_OUTPUT)  # Fourier transform
+# dftShift = np.fft.fftshift(dft)  # Move the low frequency component to the center of the frequency domain image
+# dftAmp = cv2.magnitude(dft[:, :, 0], dft[:, :, 1])  # Amplitude spectrum, decentralized
+# phase = np.arctan2(dftShift[:, :, 1], dftShift[:, :, 0])  # Calculated phase angle (radian system)
+# dftPhi = phase / np.pi * 180  # Convert phase angle to [- 180, 180]
+#
+# plt.figure(figsize=(9, 6))
+# plt.title("DFT Phase"), plt.axis('off')
+# plt.imshow(dftPhi)
+#
+# plt.figure()
+# plt.imshow(out, cmap='gray')  # displaying image after fourier transform
+# plt.show()
