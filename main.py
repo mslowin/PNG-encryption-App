@@ -7,9 +7,6 @@ from PIL import Image
 from skimage.io import imread
 #  import cv2
 
-
-
-
 IHDR_hex = '0x490x480x440x52'
 PLTE_hex = '0x500x4c0x540x45'
 IDAT_hex = '0x490x440x410x54'
@@ -136,31 +133,57 @@ pom = ''
 counter = 0
 for i in range(1, idat_data_len):
 
-    if idat_data_len - counter * 100 < 100:     #  jesli zostalo cos na koncu dodaj zera
+    if idat_data_len - counter * 50 < 50:  # jesli zostalo cos na koncu dodaj zera
         pom = ''
-        print("asjdoada")
 
-        t = idat_data_len - counter * 100
+        t = idat_data_len - counter * 50
 
-        for j in range(0, 100 - t):
+        for j in range(0, 50 - t):
             pom += '0'
         pom += idat_data[i-1:idat_data_len:1]
-        print("dlugosc: ")
-        # print(pom)
-        cyphered_msg += str(png.rsa_encryption(pom, e, n))  # enkrypcja wiadomosci i dodanie jej do stringa
+        print("---------")
+        print(pom)
+        tmp_cos = png.rsa_encryption(pom, e, n)
+        pom = str(tmp_cos)
+        if len(str(tmp_cos)) < len(str(n)):
+            pom = ''
+            for j in range(0, len(str(n)) - len(str(tmp_cos))):
+                pom += '0'
+            pom += str(tmp_cos)
+            print(pom)
+        cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
+        decrypted_text = png.rsa_decryption(int(pom), d, n)
+        print(png.rsa_decryption(tmp_cos, d, n))
+        print(len(str(png.rsa_encryption(pom, e, n))))
         break
 
-    if i % 100 == 0:
-        pom = idat_data[i-100:i:1]      #  jesli podzielne przez 100, zrob substring
-        cyphered_msg += str(png.rsa_encryption(pom, e, n))  # enkrypcja wiadomosci i dodanie jej do stringa
-        # print(pom)
+    if i % 50 == 0:
+        pom = idat_data[i-50:i:1]      # jesli podzielne przez 100, zrob substring
+        print("---------")
+        print(pom)  # tekst do enkrypcji
+        tmp_cos = png.rsa_encryption(pom, e, n)
+        pom = str(tmp_cos)
+        if len(str(tmp_cos)) < len(str(n)):
+            pom = ''
+            for j in range(0, len(str(n)) - len(str(tmp_cos))):
+                pom += '0'
+            pom += str(tmp_cos)
+
+        decrypted_text = png.rsa_decryption(int(pom), d, n)
+        cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
+        print(len(str(tmp_cos)))   # dlugosc stringa z inta po enkcypcji
+        # print(png.rsa_decryption(tmp_cos, d, n))
+
+        print("---------")
         counter = counter + 1
 
+print(counter)
+print(idat_data_len)
+print("n: ", end=' ')
+print(len(str(n)))
 
-    #  tu powinien byc string z calym idatem zaszyfrowanym, potem trzeba go podzielic na czesci o wielkosci
-    #  zwracanej przez png.rsa_encryption(pom, e, n) to gowno i odszyfrowac
-
-
+# tu powinien byc string z calym idatem zaszyfrowanym, potem trzeba go podzielic na czesci o wielkosci
+# zwracanej przez png.rsa_encryption(pom, e, n) to gowno i odszyfrowac
 
 # putting together whole PNG file data, (first 8 bytes of png file which are always the same + the rest of the file):
 tmp = image_info + tmp

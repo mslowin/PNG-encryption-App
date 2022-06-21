@@ -5,11 +5,13 @@ import sys
 import libnum
 import sympy
 
-bit_num = 100
+bit_num = 50
+
 
 def rsa_generate_keys():
-    n = pow(2, 1024)
-    m = pow(2, 1025)
+    n = pow(2, 408)
+    m = pow(2, 409)
+
     test1 = 0
     test2 = 0
     while test1 == test2:
@@ -38,17 +40,15 @@ def rsa_encryption(string_to_be_encrypted, e, n):
 
     # tu sie dzieja rzeczy dziwne
 
-    print(c)
-
     # print("Encrypted Message is: ", c)
-    return c    # Returns encrypted message
+    return c  # Returns encrypted message
+
 
 def rsa_decryption(encrypted_data, d, n):
     res = pow(encrypted_data, d, n)
     decrypted_data = res.to_bytes(bit_num, 'big')
-    print("Decypted Message is: ", decrypted_data)
 
-    return decrypted_data
+    return decrypted_data.decode("utf-8")
 
 
 def n_bit_random(n):
@@ -269,7 +269,7 @@ def print_time_data(content, i):
 def save_critical_chunk_to_tmp(content, start, end):
     tmp = ''
     for e in range(start, end):
-        if len(content[e][2:]) < 2:         # important for writing to a file and changing text to hex
+        if len(content[e][2:]) < 2:  # important for writing to a file and changing text to hex
             tmp += '0' + content[e][2:]
         else:
             tmp += content[e][2:]
@@ -279,7 +279,7 @@ def save_critical_chunk_to_tmp(content, start, end):
 def extract_image_info(content):
     tmp = ''
     for e in range(0, 8):
-        if len(content[e][2:]) < 2:         # important for writing to a file and changing text to hex
+        if len(content[e][2:]) < 2:  # important for writing to a file and changing text to hex
             tmp += '0' + content[e][2:]
         else:
             tmp += content[e][2:]
@@ -343,7 +343,7 @@ def print_phys_data(content, i):
         print(x, end=" "), print("=", end=" "), print(value)
         it = it + 4
     unit_specifier = int(content[i + it], 16)
-    if  unit_specifier == 1:
+    if unit_specifier == 1:
         print("Per meter")
     else:
         print("No unit specified!")
@@ -356,6 +356,7 @@ def print_phys_data(content, i):
             j = 0
             print()
     return phys_length
+
 
 def print_bkgd_data(content, i):
     j = 0
