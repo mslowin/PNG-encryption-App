@@ -5,15 +5,11 @@ import sys
 import libnum
 import sympy
 
+bit_num = 100
 
-def rsa_encryption(string_to_be_encrypted):
-    # message = input("Enter the message to be encrypted: ")
-    message = "hello"
-    message = message.encode('utf-8')  # po tej operacji message jest zmienną bajtową  b'hello'
-    # message = int(message)
-
+def rsa_generate_keys():
     n = pow(2, 1024)
-    m = pow(2, 1030)
+    m = pow(2, 1025)
     test1 = 0
     test2 = 0
     while test1 == test2:
@@ -26,15 +22,33 @@ def rsa_encryption(string_to_be_encrypted):
     phi = (test1 - 1) * (test2 - 1)
     e = 65537
     d = libnum.invmod(e, phi)
+    return e, d, n
+
+
+def rsa_encryption(string_to_be_encrypted, e, n):
+    # message = input("Enter the message to be encrypted: ")
+
+    message = string_to_be_encrypted
+    message = message.encode('utf-8')  # po tej operacji message jest zmienną bajtową  b'hello'
+    # message = int(message)
 
     int_message = int.from_bytes(message, "big")
 
     c = pow(int_message, e, n)
-    res = pow(c, d, n)
 
-    decrypted_message = res.to_bytes(len(message), 'big')
-    print("Encrypted Message is: ", c)
-    print("Decypted Message is: ", decrypted_message)
+    # tu sie dzieja rzeczy dziwne
+
+    print(c)
+
+    # print("Encrypted Message is: ", c)
+    return c    # Returns encrypted message
+
+def rsa_decryption(encrypted_data, d, n):
+    res = pow(encrypted_data, d, n)
+    decrypted_data = res.to_bytes(bit_num, 'big')
+    print("Decypted Message is: ", decrypted_data)
+
+    return decrypted_data
 
 
 def n_bit_random(n):

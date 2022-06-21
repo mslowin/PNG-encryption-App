@@ -5,9 +5,10 @@ import png_operations as png
 import matplotlib.pyplot as plt
 from PIL import Image
 from skimage.io import imread
-import cv2
+#  import cv2
 
-png.rsa_encryption("HELLO")
+
+
 
 IHDR_hex = '0x490x480x440x52'
 PLTE_hex = '0x500x4c0x540x45'
@@ -37,6 +38,7 @@ x = 0
 flag = 0
 idat_start = []
 idat_end = []
+idat_data = ""
 critical_chunks_space = 0
 tmp = ''
 
@@ -69,7 +71,10 @@ for i in range(len(content) - 3):
         idat_end.append(idat_start[x] + 4 + 4 + idat_length + 4)
         critical_chunks_space += (idat_end[x] - idat_start[x])
         tmp += png.save_critical_chunk_to_tmp(content, idat_start[x], idat_end[x])
-        print()
+        idat_data += png.save_critical_chunk_to_tmp(content, idat_start[x], idat_end[x])
+        idat_data = idat_data[16:len(idat_data)-8:1]
+        print(idat_data)
+
         x += 1
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == IEND_hex:
         print()
@@ -78,7 +83,7 @@ for i in range(len(content) - 3):
         iend_end = iend_start + 4 + 4 + iend_length + 4
         critical_chunks_space += (iend_end - iend_start)
         tmp += png.save_critical_chunk_to_tmp(content, iend_start, iend_end)
-        print()
+
     # # ancillary chunks:
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == tEXt_hex:
         print()
@@ -118,6 +123,44 @@ for i in range(len(content) - 3):
         print()
 
 file.close()
+
+
+e, d, n = png.rsa_generate_keys()
+# msg = png.rsa_encryption("test1321", e, n)
+# Dmsg = png.rsa_decryption(msg, d, n)
+cyphered_msg = ""
+
+print(len(idat_data))
+idat_data_len = len(idat_data)
+pom = ''
+counter = 0
+for i in range(1, idat_data_len):
+
+    if idat_data_len - counter * 100 < 100:     #  jesli zostalo cos na koncu dodaj zera
+        pom = ''
+        print("asjdoada")
+
+        t = idat_data_len - counter * 100
+
+        for j in range(0, 100 - t):
+            pom += '0'
+        pom += idat_data[i-1:idat_data_len:1]
+        print("dlugosc: ")
+        # print(pom)
+        cyphered_msg += str(png.rsa_encryption(pom, e, n))  # enkrypcja wiadomosci i dodanie jej do stringa
+        break
+
+    if i % 100 == 0:
+        pom = idat_data[i-100:i:1]      #  jesli podzielne przez 100, zrob substring
+        cyphered_msg += str(png.rsa_encryption(pom, e, n))  # enkrypcja wiadomosci i dodanie jej do stringa
+        # print(pom)
+        counter = counter + 1
+
+
+    #  tu powinien byc string z calym idatem zaszyfrowanym, potem trzeba go podzielic na czesci o wielkosci
+    #  zwracanej przez png.rsa_encryption(pom, e, n) to gowno i odszyfrowac
+
+
 
 # putting together whole PNG file data, (first 8 bytes of png file which are always the same + the rest of the file):
 tmp = image_info + tmp
