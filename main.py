@@ -5,7 +5,11 @@ import png_operations as png
 import matplotlib.pyplot as plt
 from PIL import Image
 from skimage.io import imread
+
 #  import cv2
+
+idat_tmp_start = []
+idat_tmp_end = []
 
 IHDR_hex = '0x490x480x440x52'
 PLTE_hex = '0x500x4c0x540x45'
@@ -38,6 +42,8 @@ idat_end = []
 idat_data = ""
 critical_chunks_space = 0
 tmp = ''
+tmp_RSA = ''
+tmp_encrypted = ''
 
 text_length = 'brak tekstu'
 image_info = png.extract_image_info(content)
@@ -52,6 +58,8 @@ for i in range(len(content) - 3):
         ihdr_end = ihdr_start + 4 + 4 + ihdr_length + 4
         critical_chunks_space += (ihdr_end - ihdr_start)
         tmp = png.save_critical_chunk_to_tmp(content, ihdr_start, ihdr_end)
+        tmp_RSA += png.save_critical_chunk_to_tmp(content, ihdr_start, ihdr_end)
+        tmp_encrypted += png.save_critical_chunk_to_tmp(content, ihdr_start, ihdr_end)
         print()
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == PLTE_hex:
         print()
@@ -60,19 +68,103 @@ for i in range(len(content) - 3):
         plte_end = plte_start + 4 + 4 + plte_length + 4
         critical_chunks_space += (plte_end - plte_start)
         tmp += png.save_critical_chunk_to_tmp(content, plte_start, plte_end)
+        tmp_RSA += png.save_critical_chunk_to_tmp(content, plte_start, plte_end)
+        tmp_encrypted += png.save_critical_chunk_to_tmp(content, plte_start, plte_end)
         print()
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == IDAT_hex:
         print()
+        tmp_i = i
         idat_length = png.print_idat_data(content, i)
+        # print(idat_length)
         idat_start.append(i - 4)
         idat_end.append(idat_start[x] + 4 + 4 + idat_length + 4)
         critical_chunks_space += (idat_end[x] - idat_start[x])
+        idat_tmp_start.append(len(tmp))
+        idat_tmp_end.append(len(tmp) + idat_length)
         tmp += png.save_critical_chunk_to_tmp(content, idat_start[x], idat_end[x])
         idat_data += png.save_critical_chunk_to_tmp(content, idat_start[x], idat_end[x])
-        idat_data = idat_data[16:len(idat_data)-8:1]
-        print(idat_data)
 
+        begining = idat_data[0:16:1]
+        ending = idat_data[len(idat_data)-8:]
+
+        idat_data = idat_data[16:len(idat_data) - 8:1]
+        # ---------------------------------------------
+        e, d, n = png.rsa_generate_keys()
+        # pubKeyPEM, privKeyPEM, pubKey = png.rsa_algorithm_generate_keys()
+        # msg = png.rsa_encryption("test1321", e, n)
+        # Dmsg = png.rsa_decryption(msg, d, n)
+        cyphered_msg = ""
+
+        bit_num = 50
+        # print(len(idat_data))
+        idat_data_len = len(idat_data)
+        pom = ''
+        counter = 0
+        for i in range(1, idat_data_len):
+
+            if idat_data_len - counter * bit_num < bit_num:  # jesli zostalo cos na koncu dodaj zera
+                pom = ''
+
+                t = idat_data_len - counter * bit_num
+
+                for j in range(0, bit_num - t):
+                    pom += '0'
+                pom += idat_data[i - 1:idat_data_len:1]
+                tmp_cos = png.rsa_encryption(pom, e, n)
+                pom = str(tmp_cos)
+                if len(str(tmp_cos)) < len(str(n)):
+                    pom = ''
+                    for j in range(0, len(str(n)) - len(str(tmp_cos))):
+                        pom += '0'
+                    pom += str(tmp_cos)
+                    # print(pom)
+                cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
+                decrypted_text = png.rsa_decryption(int(pom), d, n)
+                counter = counter + 1
+                break
+
+            if i % bit_num == 0:
+                pom = idat_data[i - bit_num:i:1]  # jesli podzielne przez 50, zrob substring
+                tmp_cos = png.rsa_encryption(pom, e, n)
+                pom = str(tmp_cos)
+                if len(str(tmp_cos)) < len(str(n)):
+                    pom = ''
+                    for j in range(0, len(str(n)) - len(str(tmp_cos))):
+                        pom += '0'
+                    pom += str(tmp_cos)
+
+                decrypted_text = png.rsa_decryption(int(pom), d, n)
+                cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
+                # print(png.rsa_decryption(tmp_cos, d, n))
+
+                counter = counter + 1
+
+        idat2 = ''
+        i = 0
+        while i < len(cyphered_msg):
+            t = i + len(str(n))
+            crypted_tmp = cyphered_msg[i:t:1]
+            decrypted_text = png.rsa_decryption(int(crypted_tmp), d, n)
+            i = i + len(str(n))
+            if i == len(cyphered_msg):
+                decrypted_text = decrypted_text[bit_num - ((idat_length * 2) % bit_num):]
+            idat2 += decrypted_text
+        # print("sdjsdfsdsf")
+        # print(idat2)
+        # ---------------------------------------------
+
+        # print(len(cyphered_msg))
+        begining_encrypted = str(hex(len(cyphered_msg)))[2:]
+        begining_encrypted = begining_encrypted.zfill(8)
+        begining_encrypted = begining_encrypted + '49444154'
+        tmp_RSA += begining + idat2 + ending
+        # tmp_encrypted += begining_encrypted + str(hex(int(cyphered_msg))) + ending
+        if len(cyphered_msg) % 2 != 0:
+            cyphered_msg = '0' + cyphered_msg
+        tmp_encrypted += begining_encrypted + cyphered_msg + ending
+        i = tmp_i
         x += 1
+
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == IEND_hex:
         print()
         iend_length = png.print_iend_data(content, i)
@@ -80,7 +172,8 @@ for i in range(len(content) - 3):
         iend_end = iend_start + 4 + 4 + iend_length + 4
         critical_chunks_space += (iend_end - iend_start)
         tmp += png.save_critical_chunk_to_tmp(content, iend_start, iend_end)
-
+        tmp_RSA += png.save_critical_chunk_to_tmp(content, iend_start, iend_end)
+        tmp_encrypted += png.save_critical_chunk_to_tmp(content, iend_start, iend_end)
     # # ancillary chunks:
     if (str(content[i]) + str(content[i + 1]) + str(content[i + 2]) + str(content[i + 3])) == tEXt_hex:
         print()
@@ -121,69 +214,14 @@ for i in range(len(content) - 3):
 
 file.close()
 
+# tmp_begin = tmp[0:idat_tmp_start[0]]
+# tmp_end = tmp[idat_tmp_end[0]:len(tmp)]
+# tmp2 = tmp_begin + idat2 + tmp_end
+#
 
-e, d, n = png.rsa_generate_keys()
-# msg = png.rsa_encryption("test1321", e, n)
-# Dmsg = png.rsa_decryption(msg, d, n)
-cyphered_msg = ""
 
-print(len(idat_data))
-idat_data_len = len(idat_data)
-pom = ''
-counter = 0
-for i in range(1, idat_data_len):
-
-    if idat_data_len - counter * 50 < 50:  # jesli zostalo cos na koncu dodaj zera
-        pom = ''
-
-        t = idat_data_len - counter * 50
-
-        for j in range(0, 50 - t):
-            pom += '0'
-        pom += idat_data[i-1:idat_data_len:1]
-        print("---------")
-        print(pom)
-        tmp_cos = png.rsa_encryption(pom, e, n)
-        pom = str(tmp_cos)
-        if len(str(tmp_cos)) < len(str(n)):
-            pom = ''
-            for j in range(0, len(str(n)) - len(str(tmp_cos))):
-                pom += '0'
-            pom += str(tmp_cos)
-            print(pom)
-        cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
-        decrypted_text = png.rsa_decryption(int(pom), d, n)
-        print(png.rsa_decryption(tmp_cos, d, n))
-        print(len(str(png.rsa_encryption(pom, e, n))))
-        break
-
-    if i % 50 == 0:
-        pom = idat_data[i-50:i:1]      # jesli podzielne przez 100, zrob substring
-        print("---------")
-        print(pom)  # tekst do enkrypcji
-        tmp_cos = png.rsa_encryption(pom, e, n)
-        pom = str(tmp_cos)
-        if len(str(tmp_cos)) < len(str(n)):
-            pom = ''
-            for j in range(0, len(str(n)) - len(str(tmp_cos))):
-                pom += '0'
-            pom += str(tmp_cos)
-
-        decrypted_text = png.rsa_decryption(int(pom), d, n)
-        cyphered_msg += pom  # enkrypcja wiadomosci i dodanie jej do stringa
-        print(len(str(tmp_cos)))   # dlugosc stringa z inta po enkcypcji
-        # print(png.rsa_decryption(tmp_cos, d, n))
-
-        print("---------")
-        counter = counter + 1
-
-print(counter)
-print(idat_data_len)
-print("n: ", end=' ')
-print(len(str(n)))
-
-# tu powinien byc string z calym idatem zaszyfrowanym, potem trzeba go podzielic na czesci o wielkosci
-# zwracanej przez png.rsa_encryption(pom, e, n) to gowno i odszyfrowac
+#  tu powinien byc string z calym idatem zaszyfrowanym, potem trzeba go podzielic na czesci o wielkosci
+#  zwracanej przez png.rsa_encryption(pom, e, n) to gowno i odszyfrowac
 
 # putting together whole PNG file data, (first 8 bytes of png file which are always the same + the rest of the file):
 tmp = image_info + tmp
@@ -196,6 +234,33 @@ with open('.\\PNG_images\\icon-po-anonimizacji.png', 'wb') as file2:  # creation
 
 file2.close()
 
+
+# saving decrypted data to a file
+tmp_RSA = image_info + tmp_RSA
+tmp_RSA = tmp_RSA.strip()
+tmp_RSA = tmp_RSA.replace(' ', '')  # getting rid of all unnecessary spaces and end of lines
+tmp_RSA = tmp_RSA.replace('\n', '')
+tmp_RSA = binascii.a2b_hex(tmp_RSA)  # changing hex data to binascii
+# print(tmp_RSA)
+with open('.\\PNG_images\\icon-po-decrypted.png', 'wb') as file3:  # creation of a new file in which w put tmp data
+    file3.write(tmp_RSA)
+
+file3.close()
+
+
+# saving encrypted data to a file
+tmp_encrypted = image_info + tmp_encrypted
+tmp_encrypted = tmp_encrypted.strip()
+tmp_encrypted = tmp_encrypted.replace(' ', '')  # getting rid of all unnecessary spaces and end of lines
+tmp_encrypted = tmp_encrypted.replace('\n', '')
+tmp_encrypted = binascii.a2b_hex(tmp_encrypted)  # changing hex data to binascii
+with open('.\\PNG_images\\icon-po-encrypted.png', 'wb') as file4:  # creation of a new file in which w put tmp data
+    file4.write(tmp_encrypted)
+
+file4.close()
+
+print()
+# print(tmp_encrypted)
 
 # # png_operations.print_png_data(content)
 #

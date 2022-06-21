@@ -1,11 +1,50 @@
 import math
 import random
+import rsa
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+import binascii
 import sys
-
+from Crypto.Util.number import bytes_to_long, long_to_bytes
+from Crypto.Random import get_random_bytes
+import Crypto
 import libnum
 import sympy
 
 bit_num = 50
+
+
+def rsa_algorithm_generate_keys():
+    keyPair = RSA.generate(3072)
+
+    pubKey = keyPair.publickey()
+    pubKeyPEM = pubKey.exportKey()
+    # print(pubKeyPEM.decode('ascii'))
+
+    privKeyPEM = keyPair.exportKey()
+    # print(privKeyPEM.decode('ascii'))
+    return pubKeyPEM, privKeyPEM, pubKey
+
+
+def rsa_algorithm_encryption(string_to_be_encrypted, pubKey):
+    # encryption
+    # msg = string_to_be_encrypted
+    msg = string_to_be_encrypted.encode('utf-8')
+    encryptor = PKCS1_OAEP.new(pubKey)
+    encrypted = encryptor.encrypt(msg)
+
+    return binascii.hexlify(encrypted)  # Returns encrypted message
+
+
+def rsa_algorithm_decryption(encrypted_data, privKey):
+    encrypted_data = encrypted_data[2:len(encrypted_data)-1:1]
+    encrypted_data = str.encode(encrypted_data)
+    return rsa.decrypt(encrypted_data, privKey).decode('ascii')
+    # msg = encrypted_data[2:len(encrypted_data)-1:1]
+    # decryptor = PKCS1_OAEP.new(privKey)
+    # print(msg)
+    # decMessage = decryptor.decrypt(msg).decode()
+    # return decMessage
 
 
 def rsa_generate_keys():
